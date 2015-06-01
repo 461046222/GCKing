@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 
 /**
  * Created by ZT on 2015/5/30.
@@ -16,6 +15,7 @@ public static void main(String[] args) {
 class MyFrame extends JFrame{
     /** 定义变量 **/
     int chosenBtn=1;
+    float UI_percentX=1f,UI_percentY=1f;
     ImageIcon BG=new ImageIcon(this.getClass().getResource("/BGPic.jpg"));
     ImageIcon IconExit=new ImageIcon(this.getClass().getResource("/Exit.jpg"));
     ImageIcon IconExitOnmove=new ImageIcon(this.getClass().getResource("/ExitOnmove.jpg"));
@@ -36,7 +36,14 @@ class MyFrame extends JFrame{
     ImageIcon IconLadderOnmove=new ImageIcon(this.getClass().getResource("/LadderOnmove.jpg"));
     ImageIcon IconLadderOnclick=new ImageIcon(this.getClass().getResource("/LadderOnclick.jpg"));
 
-    JLabel BGLabel=new JLabel(BG);
+    JLabel BGLabel=new JLabel(BG){
+        @Override
+        public void paintComponent(Graphics g){
+        super.paintComponent(g);
+        Dimension size=this.getParent().getSize();
+        g.drawImage(BG.getImage(),0,0,size.width,size.height,null);
+    }
+    };
 
     JPanel FunctionPanel=new JPanel(null);
 
@@ -51,11 +58,12 @@ class MyFrame extends JFrame{
 
     public MyFrame(){
         setLayout(null);                                                 /**设置Frame属性**/
-        setSize(1440,960);
-        setUndecorated(true);
+        setSize(1440+15,960+40);
         setLocationRelativeTo(null);
+        setResizable(true);
+        setDefaultLookAndFeelDecorated(true);
 
-        BGLabel.setSize(1440,960);                                      /**设置背景Label属性**/
+        BGLabel.setSize(1920,1080);                                      /**设置背景Label属性**/
         BGLabel.setLocation(0,0);
 
         IntroductionBtn.setIcon(IntroductionBtn.onmoveimage);
@@ -79,16 +87,46 @@ class MyFrame extends JFrame{
         getLayeredPane().add(IntelBtn, new Integer(1));
         getLayeredPane().add(LadderBtn, new Integer(1));
         getLayeredPane().add(FunctionPanel,new Integer(2));
+
+        addComponentListener(new ComponentListener() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                UI_percentX=(float)(getSize().width-15)/1440f;
+                UI_percentY=(float)(getSize().height-40)/960f;
+                LocationSet(UI_percentX,UI_percentY);
+            }
+
+            @Override
+            public void componentMoved(ComponentEvent e) {
+
+            }
+
+            @Override
+            public void componentShown(ComponentEvent e) {
+
+            }
+
+            @Override
+            public void componentHidden(ComponentEvent e) {
+
+            }
+        });
     }
 
     class MyButton extends JButton{                                     /**自定义按钮类**/
         boolean InBtn=false;
-        ImageIcon originimage=null,onmoveimage=null,onclickimage=null;
+        int originLocX,originLocY,originSizeX,originSizeY;
+        ImageIcon originimage=null,onmoveimage=null,onclickimage=null,chosenimage=null;
         public MyButton(int SizeX,int SizeY,int LocationX,int LocationY,final ImageIcon origin,final ImageIcon Onmove,final ImageIcon Onclick,final int Todo)
         {
             originimage=origin;
             onmoveimage=Onmove;
             onclickimage=Onclick;
+            originLocX=LocationX;
+            originLocY=LocationY;
+            originSizeX=SizeX;
+            originSizeY=SizeY;
+            chosenimage=originimage;
             setSize(SizeX,SizeY);
             setLocation(LocationX,LocationY);
             setIcon(origin);
@@ -106,6 +144,7 @@ class MyFrame extends JFrame{
 
                 @Override
                 public void mousePressed(MouseEvent e) {
+                    chosenimage=Onclick;
                     setIcon(Onclick);
 
                 }
@@ -113,6 +152,7 @@ class MyFrame extends JFrame{
                 @Override
                 public void mouseReleased(MouseEvent e) {
                     if(InBtn){
+                        chosenimage=Onmove;
                         setIcon(Onmove);
                         mouseClicked(e);
                     }
@@ -120,12 +160,14 @@ class MyFrame extends JFrame{
 
                 @Override
                 public void mouseEntered(MouseEvent e) {
+                    chosenimage=Onmove;
                     setIcon(Onmove);
                     InBtn=true;
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
+                    chosenimage=origin;
                     setIcon(origin);
                     checkBtn();
                     InBtn=false;
@@ -135,22 +177,55 @@ class MyFrame extends JFrame{
         void checkBtn(){
             dodefault();
             switch(chosenBtn){
-                case 1:IntroductionBtn.setIcon(IntroductionBtn.onmoveimage);break;
-                case 2:NvidiaBtn.setIcon(NvidiaBtn.onmoveimage);break;
-                case 3:AMDBtn.setIcon(AMDBtn.onmoveimage);break;
-                case 4:IntelBtn.setIcon(IntelBtn.onmoveimage);break;
-                case 5:LadderBtn.setIcon(LadderBtn.onmoveimage);break;
+                case 1:IntroductionBtn.changeOnmoveIcon();break;
+                case 2:NvidiaBtn.changeOnmoveIcon();break;
+                case 3:AMDBtn.changeOnmoveIcon();break;
+                case 4:IntelBtn.changeOnmoveIcon();break;
+                case 5:LadderBtn.changeOnmoveIcon();break;
             }
         }
 
         void dodefault(){
-            IntroductionBtn.setIcon(IntroductionBtn.originimage);
-            NvidiaBtn.setIcon(NvidiaBtn.originimage);
-            AMDBtn.setIcon(AMDBtn.originimage);
-            IntelBtn.setIcon(IntelBtn.originimage);
-            LadderBtn.setIcon(LadderBtn.originimage);
+            IntroductionBtn.setDefault();
+            NvidiaBtn.setDefault();
+            AMDBtn.setDefault();
+            IntelBtn.setDefault();
+            LadderBtn.setDefault();
+        }
+
+        public void setDefault(){
+            setIcon(originimage);
+            chosenimage=originimage;
+        }
+
+        public void changeOnmoveIcon(){
+            setIcon(onmoveimage);
+            chosenimage=onmoveimage;
+        }
+        public void changeSizeandLocation(float i,float j){
+            setLocation((int)((float)originLocX*i),(int)((float) originLocY*j));
+            setSize((int) ((float) originSizeX * i), (int) ((float) originSizeY * j));
+        }
+
+        @Override
+        public void paintComponent(Graphics g){
+            super.paintComponent(g);
+            Dimension btnsize=getSize();
+            g.drawImage(chosenimage.getImage(), 0, 0, btnsize.width, btnsize.height, null);
         }
     }
 
+    private void LocationSet(float i,float j){
+        ExitBtn.changeSizeandLocation(i,j);
+        IntroductionBtn.changeSizeandLocation(i,j);
+        NvidiaBtn.changeSizeandLocation(i,j);
+        AMDBtn.changeSizeandLocation(i,j);
+        IntelBtn.changeSizeandLocation(i,j);
+        LadderBtn.changeSizeandLocation(i, j);
+        FunctionPanel.setLocation((int) (540f * i), (int) (360f * j));
+        FunctionPanel.setSize((int) (850f * i), (int) (500f * j));
+        IntroductionText.setSize((int)(850f*i),(int)(500f*j));
+        IntroductionText.setFont(new Font("微软雅黑", Font.BOLD, (int)(36f*java.lang.StrictMath.sqrt(i*j))));
+    }
 }
 
